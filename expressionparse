@@ -1,0 +1,213 @@
+//
+// Created by Nivedha on 8/4/2017.
+//
+
+#ifndef PROJ8_EXPRESS_H
+#define PROJ8_EXPRESS_H
+
+#include "run.h"
+#include "Parse.h"
+#include <unordered_map>
+#endif //PROJ8_EXPRESS_H
+using namespace std;
+unordered_map<string,int>vartable;
+
+
+
+
+struct expressParse{
+
+public:
+    struct node{
+        node* parent;
+        node* left;
+        node* right;
+        TokenType type;
+        String val;
+        int numval;
+        int unary;
+
+
+        node(const char* value){
+            left = right = parent = nullptr;
+            String valcheck = String(value);
+            String dum = String("dummy");
+            if (valcheck==dum){
+                type = NUMBER;
+                numval = 0;
+            }
+            if (next_token_type == NUMBER){
+                numval = token_number_value;
+                type = NUMBER;
+                val = String(next_token());
+                unary = 0;
+            }
+            if (next_token_type == SYMBOL){
+                val = String(next_token());
+                if (val =="!" || val == "~"){
+                    unary = 1;
+                    type = SYMBOL;
+                    numval = 0;
+                }
+                else{
+                    type = SYMBOL;
+                    numval = 0;
+                    unary  = 0;
+                }
+
+            }
+            if(next_token_type == NAME){
+                val= String(next_token());
+                //numval = vartable.find(next_token())->second;
+                type = NAME;
+                unary = 0;
+            }
+
+        }
+        int evalulate() {
+            if (type == SYMBOL) {
+                if (val == "+"){
+                    return left->evalulate() +right->evalulate();
+                } else if (val == "*"){
+                    return left->evalulate() * right->evalulate();
+                } else if (val == "/"){
+                    return left->evalulate()/right->evalulate();
+                } else if (val == "-"){
+                    return left->evalulate() - right->evalulate();
+                } else if (val=="%"){
+                    return left->evalulate() %right->evalulate();
+                } else if (val=="&&"){
+                    return left->evalulate() &&right->evalulate();
+                } else if (val=="||"){
+                    return left->evalulate() || right->evalulate();
+                } else if (val == ">"){
+                    return left->evalulate()>right->evalulate();
+                } else if (val=="<"){
+                    return left->evalulate() < right->evalulate();
+                } else if (val == ">="){
+                    return left->evalulate() >= right->evalulate();
+                } else if (val == "<="){
+                    return left->evalulate() <=right->evalulate();
+                } else if (val =="!="){
+                    return left->evalulate() !=right->evalulate();
+                }else if (val == "=="){
+                    return left->evalulate()==right->evalulate();
+                } else if (val=="!"){
+                    return !left->evalulate();
+                } else if (val =="~"){
+                    return -1*left->evalulate();
+                }
+            } else if (type == NUMBER) {
+                return numval;
+            }
+            else if (type==NAME){
+                numval = vartable.find(val.c_str())->second;
+                return numval;
+            }
+        }
+
+    };
+
+
+public:
+    node* root;
+    expressParse() {
+
+        root = nullptr;
+    }
+
+    ~expressParse() {
+        delete root;
+    }
+
+    void insert(const char* value) {
+        node* child = new node(value); // create new Node which will be inserted
+
+        if (root== nullptr){
+            root = child;
+            return;
+        }
+        node* parent = nullptr;
+        node* current = root;
+        while(current!= nullptr) {
+            parent = current;
+            if (current->type == SYMBOL){
+           current = current->left;
+        }
+            else if (current->type == NAME || current->type == NUMBER){
+                current = current->parent;
+                while(current->right!= nullptr &&current!=root){
+                    if (current->right->val == "~" || current->right->val=="!"){
+                        if(current->right->right!= nullptr||current->right->left!= nullptr){
+                            current = current->parent;
+                        }
+                       else{
+                            current = current->right;
+                            break;
+                        }
+                    }
+                    else{
+                        current = current->parent;
+                    }
+                }
+                parent = current;
+                current = current->right;
+
+            }
+            if (current==root) {
+                if(current->val== "~" || current->val == "!"){return;}
+                parent = current;
+                if (current->type == SYMBOL){
+                    current = current->left;
+                }
+                else if (current->type == NAME || current->type == NUMBER) {
+                    current = current->parent;
+                    while (current->right != nullptr && current != root) {
+                        if (current->right->val == "~" || current->right->val == "!") {
+                            if (current->right->right != nullptr || current->right->left != nullptr) {
+                                current = current->parent;
+                            } else {
+                                current = current->right;
+                                break;
+                            }
+                        }
+                    }
+                    if (current==root){return;}
+                    parent = current;
+                    current = current->right;
+                }
+            }
+        }
+
+         if (parent->left== nullptr){
+            parent->left = child;
+            current = parent->left;
+            current->parent = parent;
+        }
+        else {
+            parent->right = child;
+            current = parent->right;
+            current->parent = parent;
+        }
+
+
+    }
+    int eval( node* root){
+        root->evalulate();
+    }
+
+    node* getRoot(){
+        return root;
+    }
+};
+
+ struct saveExpression{
+public:
+    String cmdType;
+    expressParse::node* rootfind;
+    string var;
+};
+
+
+
+
